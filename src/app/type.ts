@@ -10,9 +10,28 @@ export interface SensorData {
   plantType?: string;
 }
 
+export interface WeatherData {
+  temperature: number;
+  humidity: number;
+  description: string;
+  windSpeed: number;
+  pressure: number;
+  visibility: number;
+  uvIndex?: number;
+  location: string;
+  timestamp: string;
+}
+
+export interface WeatherImpact {
+  riskLevel: 'low' | 'medium' | 'high';
+  issues: string[];
+  recommendations: string[];
+  weatherAlerts: string[];
+}
+
 export interface PredictionResponse {
   assessment: string;
-  problems: string[]; // Add this property
+  problems: string[];
   recommendations: string[];
   optimalConditions: {
     temperature: string;
@@ -20,7 +39,13 @@ export interface PredictionResponse {
     soilMoisture: string;
     ph: string;
     lightIntensity: string;
+    nitrogen: string;
+    phosphorus: string;
+    potassium: string;
   };
-  rawResponse?: string; // Optional field for debugging
-  isFallback?: boolean; // Add this to explicitly identify fallback responses
+  weatherData?: WeatherData;
+  weatherImpact?: WeatherImpact;
+  preventativeCare?: string[];
+  rawResponse?: string;
+  isFallback?: boolean;
 }

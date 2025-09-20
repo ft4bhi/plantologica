@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, FormEvent, ChangeEvent } from 'react';
-import { SensorData, PredictionResponse } from '@/app/type';
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
+import { SensorData, PredictionResponse, WeatherData, WeatherImpact } from '@/app/type';
 
 interface InputFieldProps {
   label: string;
@@ -52,11 +52,47 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<'idle' | 'loading' | 'connected' | 'fallback' | 'error'>('idle');
+  const [locationStatus, setLocationStatus] = useState('Fetching location...');
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: name === 'plantType' ? value : Number(value) }));
   };
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ latitude, longitude });
+        setLocationStatus('Fetching weather data...');
+        try {
+          // IMPORTANT: Replace with your actual OpenWeatherMap API key in a .env.local file
+          const apiKey = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY;
+          if (!apiKey) {
+            setLocationStatus('OpenWeatherMap API key is missing. Please add NEXT_PUBLIC_OPENWEATHERMAP_API_KEY to your .env.local file.');
+            return;
+          }
+          const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error('Failed to fetch weather data.');
+          }
+          const weatherData = await response.json();
+          // Don't update temperature and humidity from weather API - user will input these manually
+          setLocationStatus(`Weather data fetched for ${weatherData.name}. Please enter temperature and humidity manually.`);
+        } catch (error) {
+          console.error("Weather API Error:", error);
+          setLocationStatus('Could not fetch weather data. Using manual input values.');
+        }
+      }, (error) => {
+        console.error("Geolocation Error:", error);
+        setLocationStatus('Location access denied. Using manual input values.');
+      });
+    } else {
+      setLocationStatus('Geolocation is not supported by this browser. Using manual input values.');
+    }
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -66,10 +102,15 @@ export default function HomePage() {
     setApiStatus('loading');
 
     try {
+      const requestData = {
+        ...formData,
+        ...(userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude })
+      };
+      
       const response = await fetch('/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
@@ -103,6 +144,9 @@ export default function HomePage() {
         </div>
 
         <div className="bg-gray-800 rounded-lg shadow-xl p-8">
+          <div className="text-center mb-4 text-sm text-gray-400">
+            <p>{locationStatus}</p>
+          </div>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Temperature" name="temperature" value={formData.temperature || ''} onChange={handleInputChange} placeholder="e.g., 22" unit="°C" />
             <InputField label="Humidity" name="humidity" value={formData.humidity || ''} onChange={handleInputChange} placeholder="e.g., 65" unit="%" />
@@ -152,6 +196,102 @@ export default function HomePage() {
           <div className="mt-8 bg-gray-800 rounded-lg shadow-xl p-8 animate-fade-in">
             <h2 className="text-2xl font-bold text-green-400 mb-4">Analysis Result</h2>
             
+            {/* Weather Data Display */}
+            {prediction.weatherData && (
+              <div className="mb-6 bg-gray-700 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-400 mb-3">Current Weather Conditions</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="bg-gray-600 p-3 rounded-lg">
+                    <p className="text-sm text-gray-300">Temperature (Your Input)</p>
+                    <p className="font-bold text-white">{formData.temperature}°C</p>
+                  </div>
+                  <div className="bg-gray-600 p-3 rounded-lg">
+                    <p className="text-sm text-gray-300">Humidity (Your Input)</p>
+                    <p className="font-bold text-white">{formData.humidity}%</p>
+                  </div>
+                  <div className="bg-gray-600 p-3 rounded-lg">
+                    <p className="text-sm text-gray-300">Wind Speed</p>
+                    <p className="font-bold text-white">{prediction.weatherData.windSpeed} m/s</p>
+                  </div>
+                  <div className="bg-gray-600 p-3 rounded-lg">
+                    <p className="text-sm text-gray-300">Pressure</p>
+                    <p className="font-bold text-white">{prediction.weatherData.pressure} hPa</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-center">
+                  <div className="bg-gray-600 p-3 rounded-lg">
+                    <p className="text-sm text-gray-300">Weather</p>
+                    <p className="font-bold text-white capitalize">{prediction.weatherData.description}</p>
+                  </div>
+                  <div className="bg-gray-600 p-3 rounded-lg">
+                    <p className="text-sm text-gray-300">Visibility</p>
+                    <p className="font-bold text-white">{prediction.weatherData.visibility} km</p>
+                  </div>
+                  <div className="bg-gray-600 p-3 rounded-lg">
+                    <p className="text-sm text-gray-300">UV Index</p>
+                    <p className="font-bold text-white">
+                      {prediction.weatherData.uvIndex !== null && prediction.weatherData.uvIndex !== undefined 
+                        ? prediction.weatherData.uvIndex 
+                        : 'Not Available'}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-gray-400">{prediction.weatherData.location}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Weather Impact Analysis */}
+            {prediction.weatherImpact && (
+              <div className="mb-6 bg-gray-700 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-orange-400 mb-3">Weather Impact Analysis</h3>
+                <div className="flex items-center mb-3">
+                  <span className="text-sm text-gray-300 mr-2">Risk Level:</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    prediction.weatherImpact.riskLevel === 'high' ? 'bg-red-600 text-white' :
+                    prediction.weatherImpact.riskLevel === 'medium' ? 'bg-yellow-600 text-white' :
+                    'bg-green-600 text-white'
+                  }`}>
+                    {prediction.weatherImpact.riskLevel.toUpperCase()}
+                  </span>
+                </div>
+                
+                {prediction.weatherImpact.weatherAlerts.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold text-red-400 mb-2">Weather Alerts:</h4>
+                    <ul className="list-disc list-inside space-y-1">
+                      {prediction.weatherImpact.weatherAlerts.map((alert, i) => (
+                        <li key={i} className="text-red-300 text-sm">{alert}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {prediction.weatherImpact.issues.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold text-yellow-400 mb-2">Weather Issues:</h4>
+                    <ul className="list-disc list-inside space-y-1">
+                      {prediction.weatherImpact.issues.map((issue, i) => (
+                        <li key={i} className="text-yellow-300 text-sm">{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {prediction.weatherImpact.recommendations.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-green-400 mb-2">Weather Recommendations:</h4>
+                    <ul className="list-disc list-inside space-y-1">
+                      {prediction.weatherImpact.recommendations.map((rec, i) => (
+                        <li key={i} className="text-green-300 text-sm">{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-300">Overall Assessment</h3>
                 <p className="text-gray-400 mt-1">{prediction.assessment}</p>
@@ -163,6 +303,15 @@ export default function HomePage() {
                     {prediction.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
                 </ul>
             </div>
+
+            {prediction.preventativeCare && prediction.preventativeCare.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-300">Preventative Care</h3>
+                <ul className="list-disc list-inside space-y-1 mt-1 text-gray-400">
+                  {prediction.preventativeCare.map((care, i) => <li key={i}>{care}</li>)}
+                </ul>
+              </div>
+            )}
 
              <div>
                 <h3 className="text-lg font-semibold text-gray-300">Optimal Conditions</h3>

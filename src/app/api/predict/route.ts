@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { WeatherData, WeatherImpact } from '@/app/type';
 
 // Initialize the Gemini AI client
 // Before: empty‐string fallback hides missing key
@@ -7,6 +8,133 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // After: assert presence of key at compile time, handle absence in request handler
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+// Function to fetch weather data
+async function fetchWeatherData(lat: number, lon: number): Promise<WeatherData | null> {
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY;
+    if (!apiKey) {
+      console.warn('OpenWeatherMap API key not found');
+      return null;
+    }
+
+    // First, get basic weather data for city name
+    const basicUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    const basicResponse = await fetch(basicUrl);
+    
+    if (!basicResponse.ok) {
+      console.error(`Basic Weather API error: ${basicResponse.status}`);
+      return null;
+    }
+
+    const basicData = await basicResponse.json();
+    const cityName = basicData.name;
+
+    // Try One Call API 2.5 for UV Index
+    const oneCallUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    const oneCallResponse = await fetch(oneCallUrl);
+    
+    let uvIndex = null;
+    if (oneCallResponse.ok) {
+      const oneCallData = await oneCallResponse.json();
+      uvIndex = oneCallData.current?.uvi;
+    } else {
+      console.warn(`One Call API error: ${oneCallResponse.status}, UV Index not available`);
+    }
+    
+    return {
+      temperature: basicData.main.temp, // Keep API temp for reference, but will use user input
+      humidity: basicData.main.humidity, // Keep API humidity for reference, but will use user input
+      description: basicData.weather[0].description,
+      windSpeed: basicData.wind.speed,
+      pressure: basicData.main.pressure,
+      visibility: basicData.visibility / 1000, // Convert to km
+      uvIndex: uvIndex,
+      location: cityName,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error fetching weather data:', error);
+    return null;
+  }
+}
+
+// Function to analyze weather impact on plants
+function analyzeWeatherImpact(weatherData: WeatherData, sensorData: any): WeatherImpact {
+  const issues: string[] = [];
+  const recommendations: string[] = [];
+  const weatherAlerts: string[] = [];
+  let riskLevel: 'low' | 'medium' | 'high' = 'low';
+
+  // Use user-provided temperature and humidity for analysis
+  const userTemp = sensorData.temperature;
+  const userHumidity = sensorData.humidity;
+
+  // Temperature analysis using user input
+  if (userTemp < 5) {
+    issues.push('Frost risk - temperatures below 5°C');
+    weatherAlerts.push('FROST WARNING: Protect plants from freezing temperatures');
+    recommendations.push('Cover plants with frost cloth or move indoors');
+    riskLevel = 'high';
+  } else if (userTemp > 35) {
+    issues.push('Heat stress - temperatures above 35°C');
+    weatherAlerts.push('HEAT WARNING: High temperatures may stress plants');
+    recommendations.push('Increase watering frequency and provide shade');
+    riskLevel = 'high';
+  } else if (userTemp < 10 || userTemp > 30) {
+    issues.push('Suboptimal temperature range');
+    recommendations.push('Monitor plant health closely due to temperature stress');
+    riskLevel = 'medium';
+  }
+
+  // Humidity analysis using user input
+  if (userHumidity > 90) {
+    issues.push('Excessive humidity - risk of fungal diseases');
+    recommendations.push('Improve air circulation and avoid overhead watering');
+    riskLevel = riskLevel === 'high' ? 'high' : 'medium';
+  } else if (userHumidity < 30) {
+    issues.push('Low humidity - plants may dry out quickly');
+    recommendations.push('Increase watering frequency and consider misting');
+    riskLevel = riskLevel === 'high' ? 'high' : 'medium';
+  }
+
+  // Wind analysis
+  if (weatherData.windSpeed > 15) {
+    issues.push('High wind speeds - may damage plants');
+    weatherAlerts.push('WIND WARNING: Strong winds may damage plants');
+    recommendations.push('Stake tall plants and protect from wind damage');
+    riskLevel = riskLevel === 'high' ? 'high' : 'medium';
+  }
+
+  // Pressure analysis (storm prediction)
+  if (weatherData.pressure < 1000) {
+    issues.push('Low atmospheric pressure - storm conditions possible');
+    weatherAlerts.push('STORM WARNING: Low pressure indicates potential severe weather');
+    recommendations.push('Secure loose items and prepare for heavy rain');
+    riskLevel = 'high';
+  }
+
+  // UV Index analysis
+  if (weatherData.uvIndex && weatherData.uvIndex > 8) {
+    issues.push('High UV index - may cause sunburn on plants');
+    recommendations.push('Provide shade during peak sun hours');
+    riskLevel = riskLevel === 'high' ? 'high' : 'medium';
+  }
+
+  // Visibility analysis (fog/haze)
+  if (weatherData.visibility < 1) {
+    issues.push('Poor visibility - foggy conditions may affect photosynthesis');
+    recommendations.push('Monitor for signs of reduced light absorption');
+    riskLevel = riskLevel === 'high' ? 'high' : 'medium';
+  }
+
+  return {
+    riskLevel,
+    issues,
+    recommendations,
+    weatherAlerts
+  };
+}
 
 // Fallback data for when API is unavailable
 const getFallbackData = (sensorData: any) => {
@@ -151,23 +279,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch weather data if coordinates are provided
+    let weatherData: WeatherData | null = null;
+    let weatherImpact: WeatherImpact | null = null;
+    
+    if (sensorData.latitude && sensorData.longitude) {
+      weatherData = await fetchWeatherData(sensorData.latitude, sensorData.longitude);
+      if (weatherData) {
+        weatherImpact = analyzeWeatherImpact(weatherData, sensorData);
+      }
+    }
+
     // Check if we have an API key
     if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json(
-        getFallbackData(sensorData),
-        { status: 200 }
-      );
+      const fallbackData = getFallbackData(sensorData);
+      return NextResponse.json({
+        ...fallbackData,
+        weatherData,
+        weatherImpact
+      }, { status: 200 });
     }
 
     try {
       // Create the prompt for Gemini
+      const weatherContext = weatherData ? `
+      
+      Current Weather Conditions (from weather API):
+      - Weather Description: ${weatherData.description}
+      - Wind Speed: ${weatherData.windSpeed} m/s
+      - Atmospheric Pressure: ${weatherData.pressure} hPa
+      - Visibility: ${weatherData.visibility} km
+      - UV Index: ${weatherData.uvIndex !== null && weatherData.uvIndex !== undefined ? weatherData.uvIndex : 'Not Available'}
+      - Location: ${weatherData.location}
+      
+      Note: Temperature and humidity values are provided by the user (not from weather API)
+      
+      Weather Impact Analysis:
+      ${weatherImpact ? `
+      - Risk Level: ${weatherImpact.riskLevel.toUpperCase()}
+      - Weather Issues: ${weatherImpact.issues.join(', ')}
+      - Weather Alerts: ${weatherImpact.weatherAlerts.join(', ')}
+      ` : 'No weather data available'}
+      ` : '';
+
       const prompt = `
-      Analyze these agricultural sensor readings and provide:
+      Analyze these agricultural sensor readings${weatherData ? ' along with current weather conditions' : ''} and provide:
       1. An overall assessment of soil and plant health.
       2. Specific problems detected (if any).
       3. Practical recommendations to improve current conditions.
       4. A list of preventative measures to prevent the plant from dying and ensure its long-term health.
       5. The real optimal conditions for the specified plant type, not generic ones.
+      ${weatherData ? '6. Weather-specific recommendations for plant protection and care.' : ''}
 
       Sensor Data:
       - Temperature: ${sensorData.temperature}°C
@@ -179,6 +341,7 @@ export async function POST(request: NextRequest) {
       - Phosphorus: ${sensorData.Phosphorus} ppm
       - Potassium: ${sensorData.Potassium} ppm
       - Plant Type: ${sensorData.plantType || 'Not specified'}
+      ${weatherContext}
 
       Format your response as a JSON object with this exact structure:
       {
@@ -213,10 +376,19 @@ export async function POST(request: NextRequest) {
         const jsonString = text.replace(/```json|```/g, '').trim();
         const prediction = JSON.parse(jsonString);
         
-        return NextResponse.json(prediction);
+        return NextResponse.json({
+          ...prediction,
+          weatherData,
+          weatherImpact
+        });
       } catch (parseError) {
         console.error('Error parsing Gemini response:', parseError);
-        return NextResponse.json(getFallbackData(sensorData));
+        const fallbackData = getFallbackData(sensorData);
+        return NextResponse.json({
+          ...fallbackData,
+          weatherData,
+          weatherImpact
+        });
       }
     } catch (apiError: any) {
       console.error('Gemini API error:', apiError);
@@ -228,7 +400,12 @@ export async function POST(request: NextRequest) {
         console.warn('Gemini model not found, using fallback data');
       }
       
-      return NextResponse.json(getFallbackData(sensorData));
+      const fallbackData = getFallbackData(sensorData);
+      return NextResponse.json({
+        ...fallbackData,
+        weatherData,
+        weatherImpact
+      });
     }
 
   } catch (error) {
