@@ -43,6 +43,9 @@ export default function HomePage() {
     soilMoisture: 45,
     ph: 6.8,
     lightIntensity: 18000,
+    Nitrogen: 150,
+    Phosphorus: 60,
+    Potassium: 200,
     plantType: 'Tomato Plant'
   });
   const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
@@ -106,6 +109,9 @@ export default function HomePage() {
             <InputField label="Soil Moisture" name="soilMoisture" value={formData.soilMoisture || ''} onChange={handleInputChange} placeholder="e.g., 45" unit="%" />
             <InputField label="Soil pH" name="ph" value={formData.ph || ''} onChange={handleInputChange} placeholder="e.g., 6.8" unit="pH" />
             <InputField label="Light Intensity" name="lightIntensity" value={formData.lightIntensity || ''} onChange={handleInputChange} placeholder="e.g., 18000" unit="lux" />
+            <InputField label="Nitrogen" name="Nitrogen" value={formData.Nitrogen || ''} onChange={handleInputChange} placeholder="e.g., 150" unit="ppm" />
+            <InputField label="Phosphorus" name="Phosphorus" value={formData.Phosphorus || ''} onChange={handleInputChange} placeholder="e.g., 60" unit="ppm" />
+            <InputField label="Potassium" name="Potassium" value={formData.Potassium || ''} onChange={handleInputChange} placeholder="e.g., 200" unit="ppm" />
             <InputField label="Plant Type (Optional)" name="plantType" value={formData.plantType || ''} onChange={handleInputChange} placeholder="e.g., Tomato" unit="" type="text" />
             
             <div className="md:col-span-2 mt-4">

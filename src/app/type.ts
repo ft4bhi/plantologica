@@ -4,6 +4,9 @@ export interface SensorData {
   soilMoisture: number;
   ph: number;
   lightIntensity: number;
+  Nitrogen: number;
+  Phosphorus: number;
+  Potassium: number;
   plantType?: string;
 }
 

@@ -1,0 +1,77 @@
+[33mcommit 283724e3224c5a87980936aff667db48c566f14c[m[33m ([m[1;36mHEAD[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 13:21:44 2025 +0530
+
+    fix(package):added the missing react-testing-library
+
+[33mcommit 21209efca4576ba6f8f8425bb60ddc1f81e82af3[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 13:17:09 2025 +0530
+
+    fix(ci/cd):Tryiing to fix the github ci
+
+[33mcommit 5c826d700152b709b5aa3e3cc7f1a8d3cefa1705[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 12:59:57 2025 +0530
+
+    fix(test.yml):Trying to fix the test yaml file
+
+[33mcommit d526b0a751a710168f6c816d2ca5b94971ebe797[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 12:55:29 2025 +0530
+
+    trying to fix github action 2
+
+[33mcommit 51494817e100daa49bd307fdea5a5196c8bff214[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 12:53:25 2025 +0530
+
+    trying to fix github action
+
+[33mcommit d3e00baa840d62e73927b58d171489dc1ec3b85f[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 12:25:53 2025 +0530
+
+    fix(build):fixed the build issue due to pino,doc folder and promethus
+
+[33mcommit 8e1a9ef46b6cc7f8c3fad10cc8d185e6fe82b4e1[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 12:21:58 2025 +0530
+
+    feat(doc & docker):added docker container and fixed the docs
+
+[33mcommit 556dad1c17901b019c0c0209fced8e2413621134[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 01:40:55 2025 +0530
+
+    feat(promethus and grafana):added both still need to check if they owrk or not
+
+[33mcommit 00efe86771c90f56f03614dedca1041273fb2220[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 01:37:28 2025 +0530
+
+    Trying ot integrate doc as tool dinousours
+
+[33mcommit 8d071a731baa6f35a43a39229800e5cde4c5019e[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 00:55:30 2025 +0530
+
+    fix(pwa & seo) added config fixed pwa as well
+
+[33mcommit ea9f08db218f0fea40ff0ca8ec23089ab5358ce7[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Wed Sep 3 00:35:54 2025 +0530
+
+    feat(seo ,folder,next.config as well made it storng
+
+[33mcommit 22fabb0f72448a7e4115601a24545106a0393d89[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Tue Sep 2 18:32:49 2025 +0530
+
+    intial commit
+
+[33mcommit 001dd778aea56f5414537742c82b3b43080a1e95[m
+Author: shadil-rayyan <shadilrayyan2@gmail.com>
+Date:   Tue Sep 2 18:20:46 2025 +0530
+
+    Initial commit from Create Next App

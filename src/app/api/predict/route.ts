@@ -20,28 +20,40 @@ const getFallbackData = (sensorData: any) => {
       humidity: "40-70%",
       soilMoisture: "30-60%",
       ph: "6.0-7.0",
-      lightIntensity: "10000-25000 lux"
+      lightIntensity: "10000-25000 lux",
+      Nitrogen: "100-200 ppm",
+      Phosphorus: "40-100 ppm",
+      Potassium: "100-200 ppm"
     },
     'tomato': {
       temperature: "21-27°C",
       humidity: "60-80%",
       soilMoisture: "50-70%",
       ph: "6.0-6.8",
-      lightIntensity: "20000-30000 lux"
+      lightIntensity: "20000-30000 lux",
+      Nitrogen: "150-250 ppm",
+      Phosphorus: "60-80 ppm",
+      Potassium: "200-300 ppm"
     },
     'lettuce': {
       temperature: "15-21°C",
       humidity: "50-70%",
       soilMoisture: "50-70%",
       ph: "6.0-7.0",
-      lightIntensity: "10000-20000 lux"
+      lightIntensity: "10000-20000 lux",
+      Nitrogen: "100-150 ppm",
+      Phosphorus: "40-60 ppm",
+      Potassium: "150-250 ppm"
     },
     'carrot': {
       temperature: "15-21°C",
       humidity: "40-60%",
       soilMoisture: "40-60%",
       ph: "6.0-6.8",
-      lightIntensity: "20000-30000 lux"
+      lightIntensity: "20000-30000 lux",
+      Nitrogen: "80-120 ppm",
+      Phosphorus: "50-100 ppm",
+      Potassium: "150-250 ppm"
     }
     // Add more plants here
   };
@@ -85,6 +97,33 @@ const getFallbackData = (sensorData: any) => {
     assessment = "Light intensity is excessive";
   }
 
+  // Nitrogen analysis
+  if (sensorData.Nitrogen < 80) {
+    recommendations.push("Add a nitrogen-rich fertilizer to boost leaf growth.");
+    assessment = "Nitrogen levels are low";
+  } else if (sensorData.Nitrogen > 250) {
+    recommendations.push("Reduce nitrogen application to prevent burn and encourage fruiting.");
+    assessment = "Nitrogen levels are too high";
+  }
+
+  // Phosphorus analysis
+  if (sensorData.Phosphorus < 40) {
+    recommendations.push("Apply a phosphorus supplement to improve root and flower development.");
+    assessment = "Phosphorus levels are low";
+  } else if (sensorData.Phosphorus > 100) {
+    recommendations.push("Avoid phosphorus fertilizers for now.");
+    assessment = "Phosphorus levels are too high";
+  }
+
+  // Potassium analysis
+  if (sensorData.Potassium < 100) {
+    recommendations.push("Supplement with potassium to enhance overall plant vigor and disease resistance.");
+    assessment = "Potassium levels are low";
+  } else if (sensorData.Potassium > 250) {
+    recommendations.push("Leach soil with water to reduce high potassium levels.");
+    assessment = "Potassium levels are too high";
+  }
+
   if (recommendations.length === 0) {
     recommendations.push("Conditions appear generally favorable. Monitor regularly.");
   }
@@ -102,7 +141,7 @@ export async function POST(request: NextRequest) {
     const sensorData = await request.json();
 
     // Validate required fields
-    const requiredFields = ['temperature', 'humidity', 'soilMoisture', 'ph', 'lightIntensity'];
+    const requiredFields = ['temperature', 'humidity', 'soilMoisture', 'ph', 'lightIntensity', 'Nitrogen', 'Phosphorus', 'Potassium'];
     const missingFields = requiredFields.filter(field => sensorData[field] === undefined);
     
     if (missingFields.length > 0) {
@@ -136,6 +175,9 @@ export async function POST(request: NextRequest) {
       - Soil Moisture: ${sensorData.soilMoisture}%
       - Soil pH: ${sensorData.ph}
       - Light Intensity: ${sensorData.lightIntensity} lux
+      - Nitrogen: ${sensorData.Nitrogen} ppm
+      - Phosphorus: ${sensorData.Phosphorus} ppm
+      - Potassium: ${sensorData.Potassium} ppm
       - Plant Type: ${sensorData.plantType || 'Not specified'}
 
       Format your response as a JSON object with this exact structure:
@@ -149,7 +191,10 @@ export async function POST(request: NextRequest) {
           "humidity": "optimal range in %",
           "soilMoisture": "optimal range in %",
           "ph": "optimal pH range",
-          "lightIntensity": "optimal range in lux"
+          "lightIntensity": "optimal range in lux",
+          "nitrogen": "optimal range in ppm",
+          "phosphorus": "optimal range in ppm",
+          "potassium": "optimal range in ppm"
         }
       }
       Please provide only the JSON response without any additional text.
