@@ -150,7 +150,7 @@ export default function HomePage() {
     <div className="bg-gray-900 text-white min-h-screen font-sans">
       <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold text-green-400">AgriSmart AI</h1>
+            <h1 className="text-4xl font-bold text-green-400">Plantologica</h1>
             <p className="mt-2 text-lg text-gray-300">Get AI-powered analysis of your soil and plant conditions.</p>
         </div>
 
