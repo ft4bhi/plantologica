@@ -57,7 +57,7 @@ const InputField = ({ label, name, value, onChange, placeholder, unit, type = "n
                 id={name}
                 value={value}
                 onChange={onChange}
-                className="block w-full pr-12 sm:text-sm rounded-md bg-gray-700 border-gray-600 text-white focus:ring-green-500 focus:border-green-500"
+                className="block w-full pr-12 sm:text-sm rounded-md bg-white border-black text-black focus:ring-green-500 focus:border-green-500"
                 placeholder={placeholder}
                 required
             />
@@ -147,15 +147,15 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen font-sans">
+    <div className="bg-gray-50 text-gray-900 min-h-screen font-sans">
       <main className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
         <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold text-green-400">Plantologica</h1>
-            <p className="mt-2 text-lg text-gray-300">Get AI-powered analysis of your soil and plant conditions.</p>
+            <h1 className="text-4xl font-bold text-green-600">Plantologica</h1>
+            <p className="mt-2 text-lg text-gray-600">Get AI-powered analysis of your soil and plant conditions.</p>
         </div>
 
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8">
-          <div className="text-center mb-4 text-sm text-gray-400">
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="text-center mb-4 text-sm text-gray-500">
             <p>{locationStatus}</p>
           </div>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -171,7 +171,7 @@ export default function HomePage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-300"
+                className="w-full bg-green-600 hover:bg-green-800 disabled:bg-gray-400 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-300"
               >
                 {isLoading ? 'Analyzing...' : 'Get Prediction'}
               </button>
@@ -181,64 +181,64 @@ export default function HomePage() {
 
         {/* API Status Indicators */}
         {apiStatus === 'fallback' && (
-          <div className="mt-4 bg-yellow-900 border border-yellow-600 text-yellow-200 px-4 py-3 rounded-lg">
+          <div className="mt-4 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg">
             <strong className="font-bold">Note: </strong>
             <span className="block sm:inline">Using standard agricultural guidelines as AI service is currently unavailable.</span>
           </div>
         )}
 
         {apiStatus === 'error' && (
-          <div className="mt-4 bg-red-900 border border-red-600 text-red-200 px-4 py-3 rounded-lg">
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">Could not connect to analysis service.</span>
           </div>
         )}
 
         {error && (
-            <div className="mt-8 bg-red-900 border border-red-600 text-red-200 px-4 py-3 rounded-lg" role="alert">
+            <div className="mt-8 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg" role="alert">
                 <strong className="font-bold">Error: </strong>
                 <span className="block sm:inline">{error}</span>
             </div>
         )}
 
         {prediction && (
-          <div className="mt-8 bg-gray-800 rounded-lg shadow-xl p-8 animate-fade-in">
-            <h2 className="text-2xl font-bold text-green-400 mb-4">Analysis Result</h2>
+          <div className="mt-8 bg-white rounded-lg shadow-sm p-8 animate-fade-in">
+            <h2 className="text-2xl font-bold text-green-600 mb-4">Analysis Result</h2>
             
             {/* Weather Data Display */}
             {prediction.weatherData && (
-              <div className="mb-6 bg-gray-700 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-blue-400 mb-3">Current Weather Conditions</h3>
+              <div className="mb-6 bg-gray-100 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-green-600 mb-3">Current Weather Conditions</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Temperature</p>
-                    <p className="font-bold text-white">{prediction.weatherData.temperature}°C</p>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-600">Temperature</p>
+                    <p className="font-bold text-gray-900">{prediction.weatherData.temperature}°C</p>
                   </div>
-                  <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Humidity</p>
-                    <p className="font-bold text-white">{prediction.weatherData.humidity}%</p>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-600">Humidity</p>
+                    <p className="font-bold text-gray-900">{prediction.weatherData.humidity}%</p>
                   </div>
-                  <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Wind Speed</p>
-                    <p className="font-bold text-white">{prediction.weatherData.windSpeed} m/s</p>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-600">Wind Speed</p>
+                    <p className="font-bold text-gray-900">{prediction.weatherData.windSpeed} m/s</p>
                   </div>
-                  <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Pressure</p>
-                    <p className="font-bold text-white">{prediction.weatherData.pressure} hPa</p>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-600">Pressure</p>
+                    <p className="font-bold text-gray-900">{prediction.weatherData.pressure} hPa</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-center">
-                  <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Weather</p>
-                    <p className="font-bold text-white capitalize">{prediction.weatherData.description}</p>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-600">Weather</p>
+                    <p className="font-bold text-gray-900 capitalize">{prediction.weatherData.description}</p>
                   </div>
-                  <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Visibility</p>
-                    <p className="font-bold text-white">{prediction.weatherData.visibility} km</p>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-600">Visibility</p>
+                    <p className="font-bold text-gray-900">{prediction.weatherData.visibility} km</p>
                   </div>
-                  <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">UV Index</p>
-                    <p className="font-bold text-white">
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-600">UV Index</p>
+                    <p className="font-bold text-gray-900">
                       {prediction.weatherData.uvIndex !== null && prediction.weatherData.uvIndex !== undefined 
                         ? prediction.weatherData.uvIndex 
                         : 'Not Available'}
@@ -246,21 +246,21 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="mt-3 text-center">
-                  <p className="text-sm text-gray-400">{prediction.weatherData.location}</p>
+                  <p className="text-sm text-gray-500">{prediction.weatherData.location}</p>
                 </div>
               </div>
             )}
 
             {/* Weather Impact Analysis */}
             {prediction.weatherImpact && (
-              <div className="mb-6 bg-gray-700 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-orange-400 mb-3">Weather Impact Analysis</h3>
+              <div className="mb-6 bg-gray-100 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-orange-600 mb-3">Weather Impact Analysis</h3>
                 <div className="flex items-center mb-3">
-                  <span className="text-sm text-gray-300 mr-2">Risk Level:</span>
+                  <span className="text-sm text-gray-600 mr-2">Risk Level:</span>
                   <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    prediction.weatherImpact.riskLevel === 'high' ? 'bg-red-600 text-white' :
-                    prediction.weatherImpact.riskLevel === 'medium' ? 'bg-yellow-600 text-white' :
-                    'bg-green-600 text-white'
+                    prediction.weatherImpact.riskLevel === 'high' ? 'bg-red-100 text-red-800' :
+                    prediction.weatherImpact.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
                   }`}>
                     {prediction.weatherImpact.riskLevel.toUpperCase()}
                   </span>
@@ -268,10 +268,10 @@ export default function HomePage() {
                 
                 {prediction.weatherImpact.weatherAlerts.length > 0 && (
                   <div className="mb-3">
-                    <h4 className="text-sm font-semibold text-red-400 mb-2">Weather Alerts:</h4>
+                    <h4 className="text-sm font-semibold text-red-600 mb-2">Weather Alerts:</h4>
                     <ul className="list-disc list-inside space-y-1">
                       {prediction.weatherImpact.weatherAlerts.map((alert, i) => (
-                        <li key={i} className="text-red-300 text-sm">{alert}</li>
+                        <li key={i} className="text-red-700 text-sm">{alert}</li>
                       ))}
                     </ul>
                   </div>
@@ -279,10 +279,10 @@ export default function HomePage() {
 
                 {prediction.weatherImpact.issues.length > 0 && (
                   <div className="mb-3">
-                    <h4 className="text-sm font-semibold text-yellow-400 mb-2">Weather Issues:</h4>
+                    <h4 className="text-sm font-semibold text-yellow-600 mb-2">Weather Issues:</h4>
                     <ul className="list-disc list-inside space-y-1">
                       {prediction.weatherImpact.issues.map((issue, i) => (
-                        <li key={i} className="text-yellow-300 text-sm">{issue}</li>
+                        <li key={i} className="text-yellow-700 text-sm">{issue}</li>
                       ))}
                     </ul>
                   </div>
@@ -290,10 +290,10 @@ export default function HomePage() {
 
                 {prediction.weatherImpact.recommendations.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold text-green-400 mb-2">Weather Recommendations:</h4>
+                    <h4 className="text-sm font-semibold text-green-600 mb-2">Weather Recommendations:</h4>
                     <ul className="list-disc list-inside space-y-1">
                       {prediction.weatherImpact.recommendations.map((rec, i) => (
-                        <li key={i} className="text-green-300 text-sm">{rec}</li>
+                        <li key={i} className="text-green-700 text-sm">{rec}</li>
                       ))}
                     </ul>
                   </div>
@@ -302,28 +302,28 @@ export default function HomePage() {
             )}
             
             <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Overall Assessment</h3>
-                <p className="text-gray-400 mt-1">{prediction.assessment}</p>
+                <h3 className="text-lg font-semibold text-gray-900">Overall Assessment</h3>
+                <p className="text-gray-600 mt-1">{prediction.assessment}</p>
             </div>
 
             <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Recommendations</h3>
-                <ul className="list-disc list-inside space-y-1 mt-1 text-gray-400">
+                <h3 className="text-lg font-semibold text-gray-900">Recommendations</h3>
+                <ul className="list-disc list-inside space-y-1 mt-1 text-gray-600">
                     {prediction.recommendations.map((rec, i) => <li key={i}>{rec}</li>)}
                 </ul>
             </div>
 
             {prediction.preventativeCare && prediction.preventativeCare.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-300">Preventative Care</h3>
-                <ul className="list-disc list-inside space-y-1 mt-1 text-gray-400">
+                <h3 className="text-lg font-semibold text-gray-900">Preventative Care</h3>
+                <ul className="list-disc list-inside space-y-1 mt-1 text-gray-600">
                   {prediction.preventativeCare.map((care, i) => <li key={i}>{care}</li>)}
                 </ul>
               </div>
             )}
 
              <div>
-                <h3 className="text-lg font-semibold text-gray-300">Current vs Optimal Conditions</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Current vs Optimal Conditions</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
                     {Object.entries(prediction.optimalConditions).map(([key, value]) => {
                       // Get current value based on the key
@@ -370,8 +370,8 @@ export default function HomePage() {
                       const statusColor = getStatusColor(status);
 
                       return (
-                        <div key={key} className="bg-gray-700 p-4 rounded-lg">
-                          <p className="text-sm capitalize text-gray-400 mb-2">{key.replace(/([A-Z])/g, ' $1')}</p>
+                        <div key={key} className="bg-gray-100 p-4 rounded-lg">
+                          <p className="text-sm capitalize text-gray-600 mb-2">{key.replace(/([A-Z])/g, ' $1')}</p>
                           
                           {/* Current Value */}
                           <div className="mb-2">
@@ -384,7 +384,7 @@ export default function HomePage() {
                           {/* Optimal Range */}
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Optimal Range</p>
-                            <p className="font-bold text-green-400 text-sm">{value}</p>
+                            <p className="font-bold text-green-600 text-sm">{value}</p>
                           </div>
                           
                           {/* Status Indicator */}
