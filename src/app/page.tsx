@@ -3,6 +3,38 @@
 import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { SensorData, PredictionResponse, WeatherData, WeatherImpact } from '@/app/type';
 
+// Helper function to parse optimal range and compare with current value
+function parseOptimalRange(optimalString: string): { min: number; max: number } | null {
+  // Handle different formats like "18-25°C", "40-70%", "6.0-7.0", "10000-25000 lux", "100-200 ppm"
+  const match = optimalString.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
+  if (match) {
+    return {
+      min: parseFloat(match[1]),
+      max: parseFloat(match[2])
+    };
+  }
+  return null;
+}
+
+// Helper function to determine status (low, optimal, high)
+function getConditionStatus(currentValue: number, optimalRange: { min: number; max: number } | null): 'low' | 'optimal' | 'high' {
+  if (!optimalRange) return 'optimal';
+  
+  if (currentValue < optimalRange.min) return 'low';
+  if (currentValue > optimalRange.max) return 'high';
+  return 'optimal';
+}
+
+// Helper function to get color class based on status
+function getStatusColor(status: 'low' | 'optimal' | 'high'): string {
+  switch (status) {
+    case 'low': return 'text-yellow-400 bg-yellow-900';
+    case 'optimal': return 'text-green-400 bg-green-900';
+    case 'high': return 'text-red-400 bg-red-900';
+    default: return 'text-gray-400 bg-gray-700';
+  }
+}
+
 interface InputFieldProps {
   label: string;
   name: string;
@@ -38,8 +70,6 @@ const InputField = ({ label, name, value, onChange, placeholder, unit, type = "n
 
 export default function HomePage() {
   const [formData, setFormData] = useState<Partial<SensorData>>({
-    temperature: 22,
-    humidity: 65,
     soilMoisture: 45,
     ph: 6.8,
     lightIntensity: 18000,
@@ -62,35 +92,16 @@ export default function HomePage() {
 
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async (position) => {
+      navigator.geolocation.getCurrentPosition((position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation({ latitude, longitude });
-        setLocationStatus('Fetching weather data...');
-        try {
-          // IMPORTANT: Replace with your actual OpenWeatherMap API key in a .env.local file
-          const apiKey = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY;
-          if (!apiKey) {
-            setLocationStatus('OpenWeatherMap API key is missing. Please add NEXT_PUBLIC_OPENWEATHERMAP_API_KEY to your .env.local file.');
-            return;
-          }
-          const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
-          const response = await fetch(url);
-          if (!response.ok) {
-            throw new Error('Failed to fetch weather data.');
-          }
-          const weatherData = await response.json();
-          // Don't update temperature and humidity from weather API - user will input these manually
-          setLocationStatus(`Weather data fetched for ${weatherData.name}. Please enter temperature and humidity manually.`);
-        } catch (error) {
-          console.error("Weather API Error:", error);
-          setLocationStatus('Could not fetch weather data. Using manual input values.');
-        }
+        setLocationStatus(`Location detected: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}. Weather data will be fetched during analysis.`);
       }, (error) => {
         console.error("Geolocation Error:", error);
-        setLocationStatus('Location access denied. Using manual input values.');
+        setLocationStatus('Location access denied. Weather data will not be available.');
       });
     } else {
-      setLocationStatus('Geolocation is not supported by this browser. Using manual input values.');
+      setLocationStatus('Geolocation is not supported by this browser. Weather data will not be available.');
     }
   }, []);
 
@@ -148,8 +159,6 @@ export default function HomePage() {
             <p>{locationStatus}</p>
           </div>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Temperature" name="temperature" value={formData.temperature || ''} onChange={handleInputChange} placeholder="e.g., 22" unit="°C" />
-            <InputField label="Humidity" name="humidity" value={formData.humidity || ''} onChange={handleInputChange} placeholder="e.g., 65" unit="%" />
             <InputField label="Soil Moisture" name="soilMoisture" value={formData.soilMoisture || ''} onChange={handleInputChange} placeholder="e.g., 45" unit="%" />
             <InputField label="Soil pH" name="ph" value={formData.ph || ''} onChange={handleInputChange} placeholder="e.g., 6.8" unit="pH" />
             <InputField label="Light Intensity" name="lightIntensity" value={formData.lightIntensity || ''} onChange={handleInputChange} placeholder="e.g., 18000" unit="lux" />
@@ -202,12 +211,12 @@ export default function HomePage() {
                 <h3 className="text-lg font-semibold text-blue-400 mb-3">Current Weather Conditions</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Temperature (Your Input)</p>
-                    <p className="font-bold text-white">{formData.temperature}°C</p>
+                    <p className="text-sm text-gray-300">Temperature</p>
+                    <p className="font-bold text-white">{prediction.weatherData.temperature}°C</p>
                   </div>
                   <div className="bg-gray-600 p-3 rounded-lg">
-                    <p className="text-sm text-gray-300">Humidity (Your Input)</p>
-                    <p className="font-bold text-white">{formData.humidity}%</p>
+                    <p className="text-sm text-gray-300">Humidity</p>
+                    <p className="font-bold text-white">{prediction.weatherData.humidity}%</p>
                   </div>
                   <div className="bg-gray-600 p-3 rounded-lg">
                     <p className="text-sm text-gray-300">Wind Speed</p>
@@ -314,14 +323,79 @@ export default function HomePage() {
             )}
 
              <div>
-                <h3 className="text-lg font-semibold text-gray-300">Optimal Conditions</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-2 text-center">
-                    {Object.entries(prediction.optimalConditions).map(([key, value]) => (
-                         <div key={key} className="bg-gray-700 p-3 rounded-lg">
-                            <p className="text-sm capitalize text-gray-400">{key.replace(/([A-Z])/g, ' $1')}</p>
-                            <p className="font-bold text-green-400">{value}</p>
+                <h3 className="text-lg font-semibold text-gray-300">Current vs Optimal Conditions</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                    {Object.entries(prediction.optimalConditions).map(([key, value]) => {
+                      // Get current value based on the key
+                      let currentValue: number | null = null;
+                      let unit = '';
+                      
+                      switch (key.toLowerCase()) {
+                        case 'temperature':
+                          currentValue = prediction.weatherData?.temperature || null;
+                          unit = '°C';
+                          break;
+                        case 'humidity':
+                          currentValue = prediction.weatherData?.humidity || null;
+                          unit = '%';
+                          break;
+                        case 'soilmoisture':
+                          currentValue = formData.soilMoisture || null;
+                          unit = '%';
+                          break;
+                        case 'ph':
+                          currentValue = formData.ph || null;
+                          unit = 'pH';
+                          break;
+                        case 'lightintensity':
+                          currentValue = formData.lightIntensity || null;
+                          unit = 'lux';
+                          break;
+                        case 'nitrogen':
+                          currentValue = formData.Nitrogen || null;
+                          unit = 'ppm';
+                          break;
+                        case 'phosphorus':
+                          currentValue = formData.Phosphorus || null;
+                          unit = 'ppm';
+                          break;
+                        case 'potassium':
+                          currentValue = formData.Potassium || null;
+                          unit = 'ppm';
+                          break;
+                      }
+
+                      const optimalRange = parseOptimalRange(value);
+                      const status = currentValue !== null ? getConditionStatus(currentValue, optimalRange) : 'optimal';
+                      const statusColor = getStatusColor(status);
+
+                      return (
+                        <div key={key} className="bg-gray-700 p-4 rounded-lg">
+                          <p className="text-sm capitalize text-gray-400 mb-2">{key.replace(/([A-Z])/g, ' $1')}</p>
+                          
+                          {/* Current Value */}
+                          <div className="mb-2">
+                            <p className="text-xs text-gray-500 mb-1">Current</p>
+                            <p className={`font-bold text-lg px-2 py-1 rounded ${statusColor}`}>
+                              {currentValue !== null ? `${currentValue}${unit}` : 'N/A'}
+                            </p>
+                          </div>
+                          
+                          {/* Optimal Range */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Optimal Range</p>
+                            <p className="font-bold text-green-400 text-sm">{value}</p>
+                          </div>
+                          
+                          {/* Status Indicator */}
+                          <div className="mt-2 flex items-center justify-center">
+                            <span className={`text-xs px-2 py-1 rounded-full ${statusColor}`}>
+                              {status.toUpperCase()}
+                            </span>
+                          </div>
                         </div>
-                    ))}
+                      );
+                    })}
                 </div>
             </div>
           </div>

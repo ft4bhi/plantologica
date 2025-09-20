@@ -66,33 +66,33 @@ function analyzeWeatherImpact(weatherData: WeatherData, sensorData: any): Weathe
   const weatherAlerts: string[] = [];
   let riskLevel: 'low' | 'medium' | 'high' = 'low';
 
-  // Use user-provided temperature and humidity for analysis
-  const userTemp = sensorData.temperature;
-  const userHumidity = sensorData.humidity;
+  // Use weather API temperature and humidity for analysis
+  const weatherTemp = weatherData.temperature;
+  const weatherHumidity = weatherData.humidity;
 
-  // Temperature analysis using user input
-  if (userTemp < 5) {
+  // Temperature analysis using weather API data
+  if (weatherTemp < 5) {
     issues.push('Frost risk - temperatures below 5°C');
     weatherAlerts.push('FROST WARNING: Protect plants from freezing temperatures');
     recommendations.push('Cover plants with frost cloth or move indoors');
     riskLevel = 'high';
-  } else if (userTemp > 35) {
+  } else if (weatherTemp > 35) {
     issues.push('Heat stress - temperatures above 35°C');
     weatherAlerts.push('HEAT WARNING: High temperatures may stress plants');
     recommendations.push('Increase watering frequency and provide shade');
     riskLevel = 'high';
-  } else if (userTemp < 10 || userTemp > 30) {
+  } else if (weatherTemp < 10 || weatherTemp > 30) {
     issues.push('Suboptimal temperature range');
     recommendations.push('Monitor plant health closely due to temperature stress');
     riskLevel = 'medium';
   }
 
-  // Humidity analysis using user input
-  if (userHumidity > 90) {
+  // Humidity analysis using weather API data
+  if (weatherHumidity > 90) {
     issues.push('Excessive humidity - risk of fungal diseases');
     recommendations.push('Improve air circulation and avoid overhead watering');
     riskLevel = riskLevel === 'high' ? 'high' : 'medium';
-  } else if (userHumidity < 30) {
+  } else if (weatherHumidity < 30) {
     issues.push('Low humidity - plants may dry out quickly');
     recommendations.push('Increase watering frequency and consider misting');
     riskLevel = riskLevel === 'high' ? 'high' : 'medium';
@@ -207,14 +207,8 @@ const getFallbackData = (sensorData: any) => {
     assessment = "Soil is too wet";
   }
 
-  // Temperature analysis
-  if (sensorData.temperature < 15) {
-    recommendations.push("Consider using plant covers to protect from cold");
-    assessment = "Temperature is too low for optimal growth";
-  } else if (sensorData.temperature > 30) {
-    recommendations.push("Provide shade during hottest parts of the day");
-    assessment = "Temperature is too high for optimal growth";
-  }
+  // Temperature analysis (will be handled by weather API data if available)
+  // Note: Temperature analysis is now done in weather impact analysis
 
   // Light analysis
   if (sensorData.lightIntensity < 10000) {
@@ -268,8 +262,8 @@ export async function POST(request: NextRequest) {
   try {
     const sensorData = await request.json();
 
-    // Validate required fields
-    const requiredFields = ['temperature', 'humidity', 'soilMoisture', 'ph', 'lightIntensity', 'Nitrogen', 'Phosphorus', 'Potassium'];
+    // Validate required fields (temperature and humidity now come from weather API)
+    const requiredFields = ['soilMoisture', 'ph', 'lightIntensity', 'Nitrogen', 'Phosphorus', 'Potassium'];
     const missingFields = requiredFields.filter(field => sensorData[field] === undefined);
     
     if (missingFields.length > 0) {
@@ -305,14 +299,14 @@ export async function POST(request: NextRequest) {
       const weatherContext = weatherData ? `
       
       Current Weather Conditions (from weather API):
+      - Temperature: ${weatherData.temperature}°C
+      - Humidity: ${weatherData.humidity}%
       - Weather Description: ${weatherData.description}
       - Wind Speed: ${weatherData.windSpeed} m/s
       - Atmospheric Pressure: ${weatherData.pressure} hPa
       - Visibility: ${weatherData.visibility} km
       - UV Index: ${weatherData.uvIndex !== null && weatherData.uvIndex !== undefined ? weatherData.uvIndex : 'Not Available'}
       - Location: ${weatherData.location}
-      
-      Note: Temperature and humidity values are provided by the user (not from weather API)
       
       Weather Impact Analysis:
       ${weatherImpact ? `
@@ -331,9 +325,7 @@ export async function POST(request: NextRequest) {
       5. The real optimal conditions for the specified plant type, not generic ones.
       ${weatherData ? '6. Weather-specific recommendations for plant protection and care.' : ''}
 
-      Sensor Data:
-      - Temperature: ${sensorData.temperature}°C
-      - Humidity: ${sensorData.humidity}%
+      Sensor Data (Soil and Plant Conditions):
       - Soil Moisture: ${sensorData.soilMoisture}%
       - Soil pH: ${sensorData.ph}
       - Light Intensity: ${sensorData.lightIntensity} lux
@@ -341,6 +333,8 @@ export async function POST(request: NextRequest) {
       - Phosphorus: ${sensorData.Phosphorus} ppm
       - Potassium: ${sensorData.Potassium} ppm
       - Plant Type: ${sensorData.plantType || 'Not specified'}
+      
+      Note: Temperature and humidity are provided by weather API data (see weather conditions below)
       ${weatherContext}
 
       Format your response as a JSON object with this exact structure:
